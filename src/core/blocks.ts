@@ -69,7 +69,23 @@ export function markdownToBlocks(md: string): Block[] {
     list = null;
   };
 
+  let html: string[] | null = null;
   for (const raw of lines) {
+    // raw HTML tables inside Markdown (pandoc output) are parsed as storage-format XHTML
+    if (html) {
+      html.push(raw);
+      if (/<\/table>/i.test(raw)) {
+        for (const hb of storageToBlocks(html.join('\n'))) blocks.push({ ...hb, index: blocks.length });
+        html = null;
+      }
+      continue;
+    }
+    if (/^\s*<table[\s>]/i.test(raw)) {
+      flushPara(); flushList();
+      html = [raw];
+      if (/<\/table>/i.test(raw)) { for (const hb of storageToBlocks(raw)) blocks.push({ ...hb, index: blocks.length }); html = null; }
+      continue;
+    }
     const line = raw.replace(/\t/g, '    ').replace(/^(\s*(?:[-*+]\s+)?)>\s?/, '$1');
     if (/^\s*(```|~~~)/.test(line)) { flushPara(); flushList(); inFence = !inFence; continue; }
     if (inFence) continue;

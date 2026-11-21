@@ -237,6 +237,11 @@ export function scanDocument(doc: SourceDoc): { candidates: Candidate[]; limits:
       const scopeCell = cells.find((c) => /\b(part|volume|phase|tab|section|factor)\b/i.test(c) && !/\b(pages?|words?)\b/i.test(c)) ?? cells[0];
       const lims = extractLimits(b.text, (scopeCell || info.title).slice(0, 140), info.ref, src(0));
       limits.push(...lims);
+      // schedule tables: a row with a date under a "deadlines" / "due dates" heading is a deadline
+      if (/\b(deadlines?|due|dates?|schedule|timeline)\b/i.test(info.path.join(' '))) {
+        const due = extractDeadline('Due: ' + b.text, info.ref, src(0));
+        if (due && due.dateText) deadlines.push({ ...due, text: b.text });
+      }
       const cls = classifySentence(b.text, info, { isTableRow: true });
       if (cls && (lims.length || cls.modal)) {
         candidates.push({ ...cls, text: b.text, section: info, blockIndex: b.index, sentenceIndex: 0 });
