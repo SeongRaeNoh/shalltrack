@@ -1,0 +1,29 @@
+{
+  "name": "shalltrack",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "ShallTrack: RFP compliance matrix for Confluence and Jira (Atlassian Forge app).",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build:test": "tsc -p tsconfig.test.json",
+    "test": "npm run build:test && node --test \"build/test/**/*.test.js\"",
+    "eval": "npm run build:test && node build/eval/run_eval.js",
+    "bundle:check": "node scripts/bundle-check.mjs",
+    "lint": "forge lint"
+  },
+  "dependencies": {
+    "@forge/api": "^8.5.0",
+    "@forge/bridge": "^7.3.0",
+    "@forge/kvs": "^2.1.2",
+    "@forge/react": "^12.5.0",
+    "@forge/resolver": "^2.0.2",
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/react": "^18.3.12",
+    "esbuild": "^0.28.2",
+    "typescript": "~5.9.3"
+  }
+}

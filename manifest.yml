@@ -1,0 +1,448 @@
+# ShallTrack: RFP compliance matrix for Confluence and Jira.
+# app.id is a placeholder: run "forge register" once to replace it with the real app id.
+modules:
+  confluence:globalPage:
+    - key: shalltrack-bid-desk
+      resource: bid-desk
+      resolver:
+        function: resolver
+      render: native
+      title: ShallTrack
+      route: bid-desk
+      icon: resource:icons;shalltrack.svg
+  confluence:contentAction:
+    - key: shalltrack-page-action
+      resource: page-action
+      resolver:
+        function: resolver
+      render: native
+      title: "ShallTrack: shred RFP or check draft"
+      viewportSize: large
+  jira:issuePanel:
+    - key: shalltrack-issue-panel
+      resource: issue-panel
+      resolver:
+        function: resolver
+      render: native
+      title: ShallTrack requirement
+      icon: resource:icons;shalltrack.svg
+  rovo:agent:
+    - key: shalltrack-bid-manager
+      name: ShallTrack Bid Manager
+      description: Proposal manager for RFP and tender responses. Reports uncovered requirements, drafts outlines that follow the instructions and evaluation weights, gives a semantic second opinion on coverage, and creates Jira work items.
+      icon: resource:icons;shalltrack.svg
+      prompt: resource:agent-prompts;bid-manager.txt
+      conversationStarters:
+        - Which mandatory requirements are still uncovered?
+        - Draft an outline that follows the instructions and the evaluation weights
+        - Give a second opinion on the partial items
+        - Create Jira work items for the uncovered mandatory items
+      followUpPrompt: Suggest the next step a proposal manager would take with this bid, such as checking partial items, assigning owners or creating work items.
+      actions:
+        - list-bids
+        - import-rfp-page
+        - list-requirements
+        - get-requirement
+        - get-coverage-report
+        - run-coverage-check
+        - update-requirement
+        - link-evidence
+        - get-match-candidates
+        - record-review
+        - get-outline-plan
+        - export-matrix-page
+        - create-jira-tasks
+  rovo:mcp:
+    - key: shalltrack-mcp
+      name: ShallTrack compliance matrix
+      tools:
+        - list-bids
+        - import-rfp-page
+        - list-requirements
+        - get-requirement
+        - get-coverage-report
+        - run-coverage-check
+        - update-requirement
+        - link-evidence
+        - get-match-candidates
+        - record-review
+        - get-outline-plan
+        - export-matrix-page
+        - create-jira-tasks
+  action:
+    - key: list-bids
+      name: "List bids"
+      function: a-list-bids
+      actionVerb: GET
+      description: "List the bids (RFPs imported into ShallTrack) with their requirement counts. Use it to find the bid the user means."
+      inputs:
+        nameContains:
+          title: "Name contains"
+          type: string
+          required: false
+          description: "Optional text that the bid name contains"
+    - key: import-rfp-page
+      name: "Import RFP page"
+      function: a-import-rfp-page
+      actionVerb: CREATE
+      description: "Create a new bid by extracting requirements (shall, must, will, should, may statements, submission instructions, evaluation statements, page limits and due dates) from one or more Confluence pages of an RFP."
+      inputs:
+        pageId:
+          title: "Page ids or URLs"
+          type: string
+          required: false
+          description: "Confluence page ids or URLs of the RFP, separated by commas. Leave empty to use the current page."
+        bidName:
+          title: "Bid name"
+          type: string
+          required: false
+          description: "Name for the new bid"
+    - key: list-requirements
+      name: "List requirements"
+      function: a-list-requirements
+      actionVerb: GET
+      description: "List rows of the compliance matrix of a bid, with filters. Each row has the requirement id, section, strength, type, status, coverage, owner and text."
+      inputs:
+        bid:
+          title: "Bid"
+          type: string
+          required: false
+          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+        section:
+          title: "Section"
+          type: string
+          required: false
+          description: "Section reference such as 9.2 or L.4 (includes subsections)"
+        strength:
+          title: "Strength"
+          type: string
+          required: false
+          description: "Comma-separated: mandatory, expected, recommended, optional, informational"
+        type:
+          title: "Type"
+          type: string
+          required: false
+          description: "Comma-separated: requirement, instruction, evaluation, limit, deadline"
+        status:
+          title: "Status"
+          type: string
+          required: false
+          description: "Comma-separated: open, in-progress, addressed, not-applicable"
+        coverage:
+          title: "Coverage"
+          type: string
+          required: false
+          description: "Comma-separated: covered, partial, missing, unchecked"
+        owner:
+          title: "Owner"
+          type: string
+          required: false
+          description: "Owner account id or name, or \"unassigned\""
+        text:
+          title: "Text"
+          type: string
+          required: false
+          description: "Words that the requirement text or id contains"
+        limit:
+          title: "Limit"
+          type: integer
+          required: false
+          description: "Maximum rows to return (default 40, maximum 100)"
+        offset:
+          title: "Offset"
+          type: integer
+          required: false
+          description: "Rows to skip for paging"
+    - key: get-requirement
+      name: "Get requirement"
+      function: a-get-requirement
+      actionVerb: GET
+      description: "Get one requirement with its full text, lead-in, source location, duplicates, owner, status, notes and coverage evidence."
+      inputs:
+        bid:
+          title: "Bid"
+          type: string
+          required: false
+          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+        requirementId:
+          title: "Requirement id"
+          type: string
+          required: true
+          description: "Requirement id exactly as ShallTrack shows it, e.g. 9.2.2-k3f9a"
+    - key: get-coverage-report
+      name: "Get coverage report"
+      function: a-get-coverage-report
+      actionVerb: GET
+      description: "Report which requirements the response draft does not cover yet (missing and partial items), page and word limit checks, and due dates."
+      inputs:
+        bid:
+          title: "Bid"
+          type: string
+          required: false
+          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+        onlyMandatory:
+          title: "Only mandatory"
+          type: boolean
+          required: false
+          description: "True to report only mandatory (shall/must) items"
+    - key: run-coverage-check
+      name: "Run coverage check"
+      function: a-run-coverage-check
+      actionVerb: UPDATE
+      description: "Read the response draft pages and find, for every requirement, the paragraph that answers it, with a score and the matched evidence. Also checks page and word limits."
+      inputs:
+        bid:
+          title: "Bid"
+          type: string
+          required: false
+          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+        responsePageIds:
+          title: "Response page ids or URLs"
+          type: string
+          required: false
+          description: "Confluence page ids or URLs of the proposal draft, separated by commas. Leave empty to reuse the pages of the last check."
+        includeChildPages:
+          title: "Include child pages"
+          type: boolean
+          required: false
+          description: "True to also check the child pages of the given pages"
+    - key: update-requirement
+      name: "Update requirement"
+      function: a-update-requirement
+      actionVerb: UPDATE
+      description: "Set the status, owner or note of one or more requirements in the compliance matrix."
+      inputs:
+        bid:
+          title: "Bid"
+          type: string
+          required: false
+          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+        requirementIds:
+          title: "Requirement ids"
+          type: string
+          required: true
+          description: "Requirement ids separated by commas"
+        status:
+          title: "Status"
+          type: string
+          required: false
+          description: "open, in-progress, addressed or not-applicable"
+        ownerAccountId:
+          title: "Owner account id"
+          type: string
+          required: false
+          description: "Atlassian account id of the owner"
+        ownerName:
+          title: "Owner name"
+          type: string
+          required: false
+          description: "Owner name when no account id is known"
+        note:
+          title: "Note"
+          type: string
+          required: false
+          description: "Note for the writing team"
+    - key: link-evidence
+      name: "Link evidence"
+      function: a-link-evidence
+      actionVerb: UPDATE
+      description: "Record the response paragraph that answers a requirement. This marks the requirement covered."
+      inputs:
+        bid:
+          title: "Bid"
+          type: string
+          required: false
+          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+        requirementId:
+          title: "Requirement id"
+          type: string
+          required: true
+          description: "Requirement id"
+        pageId:
+          title: "Page id or URL"
+          type: string
+          required: true
+          description: "Confluence page of the response that contains the answer"
+        excerpt:
+          title: "Excerpt"
+          type: string
+          required: true
+          description: "The sentence or paragraph that answers the requirement"
+    - key: get-match-candidates
+      name: "Get match candidates"
+      function: a-get-match-candidates
+      actionVerb: GET
+      description: "Get a requirement and the best candidate paragraphs from the response draft, for a semantic second opinion on coverage."
+      inputs:
+        bid:
+          title: "Bid"
+          type: string
+          required: false
+          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+        requirementId:
+          title: "Requirement id"
+          type: string
+          required: true
+          description: "Requirement id"
+    - key: record-review
+      name: "Record coverage review"
+      function: a-record-review
+      actionVerb: UPDATE
+      description: "Record a semantic coverage verdict (covered, partial or missing) with a one-sentence rationale. The verdict overrides the deterministic score in the matrix."
+      inputs:
+        bid:
+          title: "Bid"
+          type: string
+          required: false
+          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+        requirementId:
+          title: "Requirement id"
+          type: string
+          required: true
+          description: "Requirement id"
+        verdict:
+          title: "Verdict"
+          type: string
+          required: true
+          description: "covered, partial or missing"
+        rationale:
+          title: "Rationale"
+          type: string
+          required: true
+          description: "One sentence that names what the response says or what it lacks"
+    - key: get-outline-plan
+      name: "Get outline plan"
+      function: a-get-outline-plan
+      actionVerb: GET
+      description: "Get a proposal outline skeleton that follows the submission instructions (Section L style) in order, with page limits, evaluation factor weights (Section M style) and the requirement ids each section must answer."
+      inputs:
+        bid:
+          title: "Bid"
+          type: string
+          required: false
+          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+        totalPages:
+          title: "Total pages"
+          type: integer
+          required: false
+          description: "Total page budget to split by factor weight"
+    - key: export-matrix-page
+      name: "Export matrix page"
+      function: a-export-matrix-page
+      actionVerb: CREATE
+      description: "Write the compliance matrix as a table to a Confluence page (creates the page the first time, updates it afterwards)."
+      inputs:
+        bid:
+          title: "Bid"
+          type: string
+          required: false
+          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+        parentPageId:
+          title: "Parent page id or URL"
+          type: string
+          required: false
+          description: "Parent page for a new export page. Default: the first RFP page."
+    - key: create-jira-tasks
+      name: "Create Jira work items"
+      function: a-create-jira-tasks
+      actionVerb: CREATE
+      description: "Create Jira work items for requirements: by default one per uncovered mandatory requirement. Use dryRun true first to preview."
+      inputs:
+        bid:
+          title: "Bid"
+          type: string
+          required: false
+          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+        projectKey:
+          title: "Jira space key"
+          type: string
+          required: false
+          description: "Key of the Jira space (project), e.g. BID. Required unless dryRun is true."
+        scope:
+          title: "Scope"
+          type: string
+          required: false
+          description: "uncovered-mandatory (default), section, or ids"
+        section:
+          title: "Section"
+          type: string
+          required: false
+          description: "Section reference when scope is section"
+        requirementIds:
+          title: "Requirement ids"
+          type: string
+          required: false
+          description: "Requirement ids separated by commas when scope is ids"
+        groupBy:
+          title: "Group by"
+          type: string
+          required: false
+          description: "requirement (one work item each, default) or section (one per section)"
+        dryRun:
+          title: "Dry run"
+          type: boolean
+          required: false
+          description: "True to list what would be created without creating anything"
+        max:
+          title: "Maximum"
+          type: integer
+          required: false
+          description: "Maximum work items to create (default 25, maximum 50)"
+  function:
+    - key: resolver
+      handler: index.resolverHandler
+    - key: a-list-bids
+      handler: index.listBidsAction
+    - key: a-import-rfp-page
+      handler: index.importRfpPageAction
+    - key: a-list-requirements
+      handler: index.listRequirementsAction
+    - key: a-get-requirement
+      handler: index.getRequirementAction
+    - key: a-get-coverage-report
+      handler: index.getCoverageReportAction
+    - key: a-run-coverage-check
+      handler: index.runCoverageCheckAction
+    - key: a-update-requirement
+      handler: index.updateRequirementAction
+    - key: a-link-evidence
+      handler: index.linkEvidenceAction
+    - key: a-get-match-candidates
+      handler: index.getMatchCandidatesAction
+    - key: a-record-review
+      handler: index.recordReviewAction
+    - key: a-get-outline-plan
+      handler: index.getOutlinePlanAction
+    - key: a-export-matrix-page
+      handler: index.exportMatrixPageAction
+    - key: a-create-jira-tasks
+      handler: index.createJiraTasksAction
+resources:
+  - key: bid-desk
+    path: src/frontend/bidDesk.tsx
+  - key: page-action
+    path: src/frontend/contentAction.tsx
+  - key: issue-panel
+    path: src/frontend/issuePanel.tsx
+  - key: agent-prompts
+    path: resources/prompts
+  - key: icons
+    path: resources/icons
+permissions:
+  scopes:
+    - storage:app
+    - read:page:confluence
+    - write:page:confluence
+    - read:jira-work
+    - write:jira-work
+app:
+  id: ari:cloud:ecosystem::app/00000000-0000-0000-0000-000000000000
+  runtime:
+    name: nodejs24.x
+    memoryMB: 256
+    architecture: arm64
+  compatibility:
+    confluence:
+      required: true
+    jira:
+      required: false

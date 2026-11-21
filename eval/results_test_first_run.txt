@@ -1,0 +1,7 @@
+# First run on the held-out test sets after 3 rule-tuning rounds on dev (2026-11-21)
+{"set":"test_headstart.json","units":131,"goldItems":89,"precision":"96.7% (89/92, 95% CI 90.8-98.9)","recall":"100.0% (89/89, 95% CI 95.9-100.0)","strengthAgreementOnTP":"100.0% (89/89, 95% CI 95.9-100.0)","mandatoryPrecision":"100.0% (58/58, 95% CI 93.8-100.0)","mandatoryRecall":"100.0% (58/58, 95% CI 93.8-100.0)","raw":{"tp":89,"fp":3,"fn":0,"strengthOk":89,"mTp":58,"mFp":0,"mFn":0}}
+  FP   pred R (should) headstart#120.0 This infrastructure should provide OHS and the Con
+  FP   pred R (should) headstart#121.0 Cloud.gov This is a GovCloud-based platform-as-a-s
+  FP   pred R (should) headstart#123.0 A CI/CD server for testing and deploying code.
+{"set":"test_payroll.json","units":56,"goldItems":44,"precision":"97.8% (44/45, 95% CI 88.4-99.6)","recall":"100.0% (44/44, 95% CI 92.0-100.0)","strengthAgreementOnTP":"100.0% (44/44, 95% CI 92.0-100.0)","mandatoryPrecision":"100.0% (42/42, 95% CI 91.6-100.0)","mandatoryRecall":"100.0% (42/42, 95% CI 91.6-100.0)","raw":{"tp":44,"fp":1,"fn":0,"strengthOk":44,"mTp":42,"mFp":0,"mFn":0}}
+  FP   pred O (may) payroll#62.1 If the solution has unique data rights or ownershi

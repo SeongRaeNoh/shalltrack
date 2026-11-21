@@ -1,0 +1,33 @@
+# Coverage eval, run 3 on the same author-written draft (runs 1-2: see build note)
+{"goldCovered":21,"goldMissing":10,"unmatched":0,"confusion":{"covered->covered":13,"covered->partial":8,"missing->missing":8,"missing->partial":1,"missing->covered":1},"coveredFoundAsCoveredOrPartial":21,"missingFlaggedMissing":8,"summary":{"total":181,"covered":24,"partial":28,"missing":129,"mandatoryMissing":68,"limitBreaches":0},"limitChecks":["Factor 1 - Technical Approach: ok 260 words = about 0.5 pages at 500 words per page (limit max 5).","Factor 1 - Technical Approach: not-checkable Font size is set when the response is exported to PDF or Word; Confluence pages have no fixed font size.","Factor 2 - Staffing Plan: ok 156 words = about 0.3 pages at 500 words per page (limit max 3, plus two additional pages for each resume and one for each letter of intent).","Factor 2 - Staffing Plan: not-checkable Font size is set when the response is exported to PDF or Word; Confluence pages have no fixed font size.","Factor 2 - Staffing Plan: ok 156 words = about 0.3 pages at 500 words per page (limit max 1).","Factor 3 - Similar Experience: not-checkable Font size is set when the response is exported to PDF or Word; Confluence pages have no fixed font size."]}
+  covered  pred covered  1.00 5.1-o6y32 Contractor is required to maintain deployment scripts and configuratio
+  covered  pred covered  0.62 5.1-1fqcm All technology choices must work seamlessly with cloud.gov hosting.
+  covered  pred covered  0.56 5.1-ls9oj A modern, open-source friendly language such as Ruby or Javascript, on
+  covered  pred covered  1.00 5.1-wjc9t An open-source framework such as Rails or Express, on the most recent 
+  covered  pred covered  0.67 5.1-uat6s A modern, open-source friendly language such as Javascript or Typescri
+  covered  pred covered  1.00 5.1-8v5gv An open-source framework such as React or Ember.js, on the most recent
+  covered  pred partial  0.47 5.1-1u8ra Any website that is developed or otherwise delivered as a result of th
+  covered  pred partial  0.46 5.2-h2t1l All Contractor personnel working under the resulting contract will nee
+  covered  pred covered  0.68 6.0-1ntfi The Contractor must designate who will fill these three roles: Facilit
+  covered  pred partial  0.46 6.0-g3m5s The Technical and Design Leads should not be the same person, but eith
+  covered  pred partial  0.33 6.0-1vm7t This person should have a background as a scrum master, product manage
+  covered  pred covered  0.63 6.0-11gqk This person should have a background as an engineer.
+  covered  pred partial  0.41 6.2-polx7 The Contractor must provide a cross functional team that is experience
+  covered  pred partial  0.42 6.2-45tiw The Contractor should deliver working software early in the post-award
+  covered  pred partial  0.38 9.2.2-1ppdm A proposed approach to providing the services required including the p
+  covered  pred covered  0.97 9.2.2-9xvjj How the Contractor will develop the software in an open and agile mann
+  covered  pred covered  0.81 9.2.2-1hh5q Identification of potential obstacles to efficient development and pla
+  covered  pred covered  0.69 9.2.3-1nsne Proposed approach to staffing the requirements of this project
+  covered  pred covered  0.86 9.2.3-6n72v Titles of each of the labor categories proposed
+  covered  pred covered  0.69 9.2.3-svfp5 Proposed level of effort for each member of the Contractor’s team (use
+  covered  pred partial  0.54 9.2.3-1vum7 Names of the individuals who will fill the roles of Facilitator, Techn
+  missing  pred missing  0.15 5.2-yr32g Any work that requires access to and handling of PII must be performed
+  missing  pred missing  0.11 5.2-1s6kd I n addition, the Contractor’s key personnel will need to obtain a per
+  missing  pred missing  0.08 6.1-db22k Key Personnel substitutions must be submitted to the contracting offic
+  missing  pred partial  0.34 6.0-1qicb This person should have a background as a user experience researcher o
+  missing  pred missing  0.25 6.2-krer2 The Contractor will use prototypes and working software as tools to te
+  missing  pred missing  0.19 9.2.2-1rfnc A clear demonstration that the Contractor understands the details of t
+  missing  pred missing  0.24 9.2.2-1vp2k A description of the Contractor’s plans, if any, to provide services t
+  missing  pred missing  0.28 9.2.3-6eh4d Extent to which the proposed team for this project was involved in the
+  missing  pred covered  0.82 9.2.3-1n9oe Include resumes for the Facilitator, Technical Lead, and Design Lead.
+  missing  pred missing  0.15 9.2.4-1k7ix The Contractor must demonstrate similar experience by sharing up to fi

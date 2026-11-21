@@ -1,0 +1,38 @@
+{
+  "note": "Gold coverage for test/fixtures/headstart_response_draft.md against the Head Start RFQ. Written by the build agent together with the draft on 2026-11-21; thresholds of the coverage scorer (covered >= 0.55, partial >= 0.30) were fixed before the first run. Match key: start of the requirement text.",
+  "covered": [
+    "Contractor is required to maintain deployment scripts",
+    "All technology choices must work seamlessly with cloud.gov",
+    "A modern, open-source friendly language such as Ruby",
+    "An open-source framework such as Rails or Express",
+    "A modern, open-source friendly language such as Javascript or Typescript",
+    "An open-source framework such as React",
+    "Any website that is developed or otherwise delivered",
+    "All Contractor personnel working under the resulting contract will need to obtain",
+    "The Contractor must designate who will fill these three roles",
+    "The Technical and Design Leads should not be the same person",
+    "This person should have a background as a scrum master",
+    "This person should have a background as an engineer",
+    "The Contractor must provide a cross functional team",
+    "The Contractor should deliver working software early",
+    "A proposed approach to providing the services required",
+    "How the Contractor will develop the software in an open and agile manner",
+    "Identification of potential obstacles",
+    "Proposed approach to staffing the requirements",
+    "Titles of each of the labor categories proposed",
+    "Proposed level of effort for each member",
+    "Names of the individuals who will fill the roles"
+  ],
+  "missing": [
+    "Any work that requires access to and handling of PII",
+    "I n addition, the Contractor",
+    "Key Personnel substitutions must be submitted",
+    "This person should have a background as a user experience researcher",
+    "The Contractor will use prototypes and working software",
+    "A clear demonstration that the Contractor understands",
+    "A description of the Contractor",
+    "Extent to which the proposed team for this project was involved",
+    "Include resumes for the Facilitator",
+    "The Contractor must demonstrate similar experience by sharing"
+  ]
+}
