@@ -1,7 +1,7 @@
 // Helpers shared by the UI Kit surfaces.
 import React from 'react';
 import { invoke } from '@forge/bridge';
-import { Lozenge, SectionMessage, Text } from '@forge/react';
+import { Box, Lozenge, SectionMessage, Text } from '@forge/react';
 
 export interface Res<T> { ok: boolean; data?: T; error?: string }
 
@@ -20,7 +20,8 @@ const APPEARANCE: Record<string, LozengeAppearance> = {
 };
 
 export function Pill(props: { value: string; label?: string; bold?: boolean }) {
-  return <Lozenge appearance={APPEARANCE[props.value] ?? 'default'} isBold={props.bold}>{props.label ?? props.value}</Lozenge>;
+  // the Box keeps the lozenge at its full width inside Inline rows and narrow table cells (it was cut to "mand...")
+  return <Box xcss={{ minWidth: 'fit-content' }}><Lozenge appearance={APPEARANCE[props.value] ?? 'default'} isBold={props.bold} maxWidth={240}>{props.label ?? props.value}</Lozenge></Box>;
 }
 
 export function ErrorBox(props: { error?: string | null }) {

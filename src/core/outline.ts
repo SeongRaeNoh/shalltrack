@@ -33,8 +33,16 @@ function overlap(a: string[], b: string[]): number {
 export function buildOutline(reqs: Requirement[], limits: Limit[], factors: Factor[], opts: { totalPages?: number } = {}): Outline {
   const groups = new Map<string, OutlineSection>();
   const order: string[] = [];
+  // Response sections come from the proposal-preparation part of the RFP (instruction and evaluation sections, Section L/M style).
+  // Statement-of-work and administration sections also contain instructions ("the contractor shall submit invoices"), but they are not proposal sections.
+  // Schedule and contact sections ("Deadlines and response formats") are not response sections either.
+  const NOT_A_RESPONSE_SECTION = /\b(deadlines?|dates?|schedule|point of contact|invoic\w*|payments?)\b/i;
+  const isHeadingCandidate = (r: Requirement) => (r.type === 'instruction' || r.type === 'limit' || r.type === 'evaluation');
+  const proposalPart = (r: Requirement) => (r.sectionKind === 'instructions' || r.sectionKind === 'evaluation') && !NOT_A_RESPONSE_SECTION.test(r.sectionTitle);
+  const useKinds = reqs.some((r) => isHeadingCandidate(r) && proposalPart(r));
   for (const r of reqs) {
-    if (r.type !== 'instruction' && r.type !== 'limit' && r.type !== 'evaluation') continue;
+    if (!isHeadingCandidate(r)) continue;
+    if (useKinds && !proposalPart(r)) continue;
     const key = r.sectionRef || r.sectionTitle;
     if (!groups.has(key)) {
       groups.set(key, { heading: (r.sectionRef ? r.sectionRef + ' ' : '') + r.sectionTitle, sectionRef: r.sectionRef, requirementIds: [], mandatoryCount: 0 });
@@ -59,9 +67,13 @@ export function buildOutline(reqs: Requirement[], limits: Limit[], factors: Fact
   }
   for (const s of sections) {
     const lim = limits.filter((l) => l.kind === 'pages' && l.comparator === 'max' && !l.perItem && l.sectionRef && l.sectionRef === s.sectionRef);
-    if (lim.length) s.pageLimit = Math.min(...lim.map((l) => l.value));
+    // the section-level limit is the largest one; smaller limits in the same section are for parts (a letter of intent, one resume)
+    if (lim.length) s.pageLimit = Math.max(...lim.map((l) => l.value));
     const ft = contentTerms(s.heading, DOMAIN_STOPWORDS);
-    const f = factors.find((x) => overlap(contentTerms(x.name, DOMAIN_STOPWORDS), ft) >= 0.5);
+    const num = s.heading.match(/\bfactor\s+([0-9]+|[ivx]+)\b/i);
+    const f = num
+      ? factors.find((x) => x.number.toUpperCase() === num[1].toUpperCase())
+      : factors.find((x) => { const nt = contentTerms(x.name, DOMAIN_STOPWORDS); return nt.length > 0 && nt.filter((t) => ft.includes(t)).length / nt.length >= 0.67; });
     if (f) s.factor = { name: 'Factor ' + f.number + ' - ' + f.name, weight: f.weight };
   }
   if (opts.totalPages) {

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import * as assert from 'node:assert/strict';
 import * as fs from 'fs';
 import * as path from 'path';
-import { extractRequirements, markdownToBlocks, storageToBlocks } from '../src/core';
+import { buildOutline, extractRequirements, markdownToBlocks, storageToBlocks } from '../src/core';
 import { markdownToStorage } from '../scripts/md-to-storage';
 import { evaluate } from '../eval/run_eval';
 
@@ -27,6 +27,18 @@ for (const f of ['tdrs_rfq.md', 'headstart_rfq.md', 'payroll_rfq.md']) {
     assert.ok(same / a.length >= 0.97, 'shared ids ' + same + '/' + a.length);
   });
 }
+
+test('outline of the TDRS RFQ keeps only proposal sections, with section-level page limits and factor numbers', () => {
+  const r = extractRequirements([{ id: 't', title: 't', blocks: markdownToBlocks(read('tdrs_rfq.md')) }]);
+  const o = buildOutline(r.requirements, r.limits, r.factors.factors);
+  const heads = o.sections.map((s) => s.heading);
+  assert.ok(!heads.some((h) => /Contractor Performance|Invoice|Quality Assurance|Deadlines/.test(h)), heads.join('; '));
+  const staffing = o.sections.find((s) => s.heading.startsWith('9.2.3'));
+  assert.equal(staffing?.pageLimit, 3);
+  assert.equal(o.sections.find((s) => s.heading.startsWith('9.2.2'))?.pageLimit, 5);
+  assert.equal(o.sections.find((s) => s.heading.startsWith('9.2.1'))?.factor, undefined);
+  assert.match(staffing?.factor?.name ?? '', /^Factor 2/);
+});
 
 for (const [g, d, id] of [['test_headstart.json', 'headstart_rfq.md', 'headstart'], ['test_payroll.json', 'payroll_rfq.md', 'payroll'], ['dev_tdrs.json', 'tdrs_rfq.md', 'tdrs']]) {
   test('gold precision and recall stay at or above 0.95 on ' + g, () => {

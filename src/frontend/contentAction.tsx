@@ -17,6 +17,7 @@ function App() {
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [created, setCreated] = useState(false);
 
   useEffect(() => {
     if (!pageId) return;
@@ -26,7 +27,7 @@ function App() {
 
   const importPage = async () => {
     setBusy(true); setError(null);
-    try { const r = await call<{ bid: { name: string }; stats: { requirements: number } }>('createBid', { name: name || preview?.page.title, pageRefs: [pageId] }); setMsg('Created bid "' + r.bid.name + '" with ' + r.stats.requirements + ' items. Open ShallTrack from the apps menu to see the matrix.'); }
+    try { const r = await call<{ bid: { name: string }; stats: { requirements: number } }>('createBid', { name: name || preview?.page.title, pageRefs: [pageId] }); setCreated(true); setMsg('Created bid "' + r.bid.name + '" with ' + r.stats.requirements + ' items. Open ShallTrack from the Apps menu to see the matrix.'); call<BidIndexEntry[]>('listBids').then((b) => { setBids(b); setTarget(b[0]?.id); }).catch(() => undefined); }
     catch (e) { setError((e as Error).message); } finally { setBusy(false); }
   };
   const checkDraft = async () => {
@@ -41,7 +42,6 @@ function App() {
   if (!pageId) return <Text>Open this action from a Confluence page.</Text>;
   return (
     <Stack space="space.200">
-      <Heading size="medium">ShallTrack</Heading>
       <ErrorBox error={error} />
       {msg ? <SectionMessage appearance="success"><Text>{msg}</Text></SectionMessage> : null}
       <Heading size="small">Use this page as an RFP</Heading>
@@ -49,7 +49,7 @@ function App() {
         <Stack space="space.100">
           <Text><Strong>{preview.stats.requirements}</Strong> items found in "{preview.page.title}": {preview.stats.byStrength.mandatory ?? 0} mandatory, {preview.limits} limits, {preview.deadlines} due dates, {preview.factors.length} evaluation factors.</Text>
           {preview.sample.slice(0, 5).map((s) => <Inline key={s.id} space="space.100"><Pill value={s.strength} /><Text>{s.id}: {short(s.text, 140)}</Text></Inline>)}
-          <Inline space="space.100"><Textfield name="name" placeholder="Bid name" onChange={(e) => setName(e.target.value)} /><Button appearance="primary" isDisabled={busy} onClick={importPage}>Create bid from this page</Button></Inline>
+          <Inline space="space.100"><Textfield name="name" placeholder="Bid name (default: page title)" onChange={(e) => setName(e.target.value)} /><Button appearance="primary" isDisabled={busy || created} onClick={importPage}>{busy ? 'Extracting...' : 'Create bid from this page'}</Button></Inline>
         </Stack>
       ) : <Spinner label="Reading page" />}
       <Heading size="small">Or check this page as a response draft</Heading>

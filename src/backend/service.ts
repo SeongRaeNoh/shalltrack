@@ -326,10 +326,21 @@ export async function deleteBid(bidRef: string) {
 }
 
 /** Preview of what an import would extract from one page, without saving. */
+/** Up to 6 items that show what the matrix holds: mandatory requirements and instructions from numbered sections first, then one limit and one evaluation item. */
+function previewSample<T extends { type: string; strength: string; sectionRef: string }>(reqs: T[]): T[] {
+  const pick: T[] = [];
+  const add = (xs: T[], n: number) => { for (const x of xs) { if (pick.length >= 6 || n <= 0) break; if (!pick.includes(x)) { pick.push(x); n--; } } };
+  add(reqs.filter((x) => x.strength === 'mandatory' && x.sectionRef && (x.type === 'requirement' || x.type === 'instruction')), 3);
+  add(reqs.filter((x) => x.type === 'limit'), 1);
+  add(reqs.filter((x) => x.type === 'evaluation'), 1);
+  add(reqs, 6 - pick.length);
+  return pick.sort((a, b) => reqs.indexOf(a) - reqs.indexOf(b));
+}
+
 export async function previewPage(pageRef: string) {
   const { docs, metas } = await loadPages([pageRef]);
   const r = extractRequirements(docs);
-  return { page: metas[0], stats: r.stats, sample: r.requirements.slice(0, 8).map((x) => ({ id: x.id, strength: x.strength, type: x.type, text: truncate(x.text, 200) })), limits: r.limits.length, deadlines: r.deadlines.length, factors: r.factors.factors };
+  return { page: metas[0], stats: r.stats, sample: previewSample(r.requirements).map((x) => ({ id: x.id, strength: x.strength, type: x.type, text: truncate(x.text, 200) })), limits: r.limits.length, deadlines: r.deadlines.length, factors: r.factors.factors };
 }
 
 export const STRENGTHS: Strength[] = ['mandatory', 'expected', 'recommended', 'optional', 'informational'];

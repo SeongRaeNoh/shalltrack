@@ -77,18 +77,19 @@ function DetailModal(props: { bidId: string; row: MatrixRow; onClose: () => void
   };
   return (
     <Modal onClose={props.onClose} width="x-large">
-      <ModalHeader><ModalTitle>{r.id}</ModalTitle></ModalHeader>
+      <ModalHeader><ModalTitle>{r.id + ' - ' + short((r.sectionRef ? r.sectionRef + ' ' : '') + r.sectionTitle, 70)}</ModalTitle></ModalHeader>
       <ModalBody>
         <Stack space="space.200">
           <Inline space="space.100"><Pill value={r.strength} bold /><Pill value={r.type} label={r.type} /><Pill value={r.effectiveCoverage} label={'coverage: ' + r.effectiveCoverage} /></Inline>
+          <Text><Strong>{r.text}</Strong></Text>
           {r.leadIn ? <Text><Strong>Lead-in:</Strong> {r.leadIn}</Text> : null}
-          <Text>{r.text}</Text>
           <Text><Strong>Source:</Strong> {r.docTitle} / {(r.sectionRef ? r.sectionRef + ' ' : '') + r.sectionTitle}{r.duplicates ? ' (also stated ' + r.duplicates + ' more time(s))' : ''}</Text>
           {r.evidenceExcerpt ? (
             <SectionMessage appearance={r.effectiveCoverage === 'covered' ? 'success' : 'warning'} title={'Best evidence' + (r.coverageScore !== undefined ? ' (score ' + r.coverageScore + ')' : '') + (r.evidenceDocTitle ? ' in ' + r.evidenceDocTitle : '')}>
               <Text>{r.evidenceExcerpt}</Text>
             </SectionMessage>
           ) : null}
+          <Text><Strong>Status</Strong></Text>
           <Select options={opt(STATUSES)} defaultValue={{ label: r.status, value: r.status }} onChange={(v: unknown) => setStatus(values(v)[0] ?? r.status)} />
           <UserPicker label="Owner" name="owner" defaultValue={r.owner?.accountId} onChange={(u: unknown) => setOwner((u as { id?: string } | null)?.id)} />
           <TextArea name="note" defaultValue={r.note} placeholder="Note for the writing team" onChange={(e) => setNote(e.target.value)} />
@@ -166,13 +167,13 @@ function CoverageTab(props: { m: Matrix; reload: () => void; onOpen: (r: MatrixR
         <Stack space="space.100">
           <Inline space="space.200"><Pill value="covered" label={'covered ' + c.covered} /><Pill value="partial" label={'partial ' + c.partial} /><Pill value="missing" label={'missing ' + c.missing} /><Pill value="mandatory" label={'mandatory missing ' + c.mandatoryMissing} bold /><Pill value={c.limitBreaches ? 'missing' : 'covered'} label={'limit breaches ' + c.limitBreaches} /></Inline>
           <ProgressBar value={c.total ? c.covered / c.total : 0} />
-          <Text>Last check: {m.coverage?.generatedAt}. Ask the ShallTrack Bid Manager agent in Rovo Chat for a semantic second opinion on partial items.</Text>
+          <Text>Last check: {(m.coverage?.generatedAt ?? '').replace('T', ' ').slice(0, 16)} UTC. Ask the ShallTrack Bid Manager agent in Rovo Chat for a semantic second opinion on partial items.</Text>
         </Stack>
       ) : <EmptyState header="No coverage check yet" description="Add the response draft pages and run the check." />}
       <Heading size="small">Mandatory items without full coverage ({gaps.length})</Heading>
       <DynamicTable
         head={{ cells: [{ key: 'id', content: 'ID' }, { key: 'text', content: 'Requirement' }, { key: 'cov', content: 'Coverage' }, { key: 'ev', content: 'Best evidence' }, { key: 'a', content: '' }] }}
-        rows={gaps.map((r) => ({ key: r.id, cells: [{ key: 'id', content: r.id }, { key: 'text', content: short(r.text, 140) }, { key: 'cov', content: <Pill value={r.effectiveCoverage} /> }, { key: 'ev', content: short(r.evidenceExcerpt, 120) || '-' }, { key: 'a', content: <Button appearance="subtle" onClick={() => props.onOpen(r)}>Open</Button> }] }))}
+        rows={gaps.map((r) => ({ key: r.id, cells: [{ key: 'id', content: r.id }, { key: 'text', content: short(r.text, 140) }, { key: 'cov', content: <Pill value={r.effectiveCoverage} /> }, { key: 'ev', content: r.effectiveCoverage === 'missing' ? 'no paragraph found' : short(r.evidenceExcerpt, 120) || '-' }, { key: 'a', content: <Button appearance="subtle" onClick={() => props.onOpen(r)}>Open</Button> }] }))}
         rowsPerPage={15}
         emptyView={<Text>No gaps among mandatory items.</Text>}
       />
@@ -190,7 +191,7 @@ function LimitsTab(props: { m: Matrix }) {
         head={{ cells: [{ key: 's', content: 'Applies to' }, { key: 'l', content: 'Limit' }, { key: 'c', content: 'Check' }, { key: 't', content: 'Source text' }] }}
         rows={m.limits.map((l) => { const c = checks.get(l.id); return { key: l.id, cells: [
           { key: 's', content: short((l.sectionRef ? l.sectionRef + ' ' : '') + l.scopeTitle, 50) + (l.perItem ? ' (each ' + l.perItem + ')' : '') },
-          { key: 'l', content: (l.comparator === 'max' ? 'max ' : 'min ') + l.value + ' ' + l.kind + (l.extra ? ', ' + l.extra : '') },
+          { key: 'l', content: (l.comparator === 'max' ? 'max ' : 'min ') + (l.kind === 'font-size' ? 'font size ' + l.value + ' pt' : l.value + ' ' + (l.value === 1 ? l.kind.replace(/s$/, '') : l.kind)) + (l.extra ? ', ' + l.extra : '') },
           { key: 'c', content: c ? <Inline space="space.050"><Pill value={c.status === 'breach' ? 'missing' : c.status === 'ok' ? 'covered' : 'n/a'} label={c.status} /><Text>{short(c.note, 90)}</Text></Inline> : 'not checked' },
           { key: 't', content: short(l.text, 120) },
         ] }; })}
@@ -242,8 +243,8 @@ function ExportTab(props: { m: Matrix; reload: () => void }) {
   const jiraRun = async (dryRun: boolean) => {
     setError(null);
     try {
-      const r = await call<{ dryRun?: boolean; wouldCreate?: Array<{ summary: string }>; created?: Array<{ key: string }>; skippedBeyondMax: number }>('createJiraTasks', { bidId: m.bid.id, projectKey: project, scope, section, groupBy, dryRun });
-      setMsg(dryRun ? 'Would create ' + (r.wouldCreate?.length ?? 0) + ' work items: ' + short((r.wouldCreate ?? []).map((w) => w.summary).join('; '), 400) : 'Created ' + (r.created?.length ?? 0) + ' work items: ' + (r.created ?? []).map((c) => c.key).join(', '));
+      const r = await call<{ dryRun?: boolean; wouldCreate?: Array<{ summary: string }>; created?: Array<{ key: string }>; skippedBeyondMax?: number }>('createJiraTasks', { bidId: m.bid.id, projectKey: project, scope, section, groupBy, dryRun });
+      setMsg((r.skippedBeyondMax ? r.skippedBeyondMax + ' more items are over the limit of this run. ' : '') + (dryRun ? 'Would create ' + (r.wouldCreate?.length ?? 0) + ' work items: ' + short((r.wouldCreate ?? []).map((w) => w.summary).join('; '), 400) : 'Created ' + (r.created?.length ?? 0) + ' work items: ' + (r.created ?? []).map((c) => c.key).join(', ')));
       if (!dryRun) props.reload();
     } catch (e) { setError((e as Error).message); }
   };
@@ -314,9 +315,9 @@ function App() {
           <Select options={bids.map((b) => ({ label: b.name + ' (' + b.requirements + ' items)', value: b.id }))} defaultValue={bids.filter((b) => b.id === bidId).map((b) => ({ label: b.name + ' (' + b.requirements + ' items)', value: b.id }))[0]} onChange={(v: unknown) => setBidId(values(v)[0])} />
           {s ? (
             <Inline space="space.200" alignBlock="center" shouldWrap>
-              <Text><Strong>{s.total}</Strong> items</Text><Badge appearance="important">{s.mandatory}</Badge><Text>mandatory</Text>
-              <Badge appearance="removed">{s.mandatoryMissing}</Badge><Text>mandatory without coverage</Text>
-              <Badge>{s.unassigned}</Badge><Text>without owner</Text>
+              <Text><Strong>{s.total}</Strong> items</Text><Badge appearance="important" max={99999}>{s.mandatory}</Badge><Text>mandatory</Text>
+              {m?.coverage ? <><Badge appearance="removed" max={99999}>{s.mandatoryMissing}</Badge><Text>mandatory without coverage</Text></> : <Text>coverage not checked yet</Text>}
+              <Badge max={99999}>{s.unassigned}</Badge><Text>without owner</Text>
               <Box xcss={{ width: '200px' }}><ProgressBar value={coveredShare} /></Box><Text>{Math.round(coveredShare * 100)}% covered</Text>
             </Inline>
           ) : null}
