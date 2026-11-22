@@ -29,15 +29,21 @@ modules:
   rovo:agent:
     - key: shalltrack-bid-manager
       name: ShallTrack Bid Manager
-      description: Proposal manager for RFP and tender responses. Reports uncovered requirements, drafts outlines that follow the instructions and evaluation weights, gives a semantic second opinion on coverage, and creates Jira work items.
+      description: Proposal manager for RFP and tender responses. Reports uncovered
+        requirements, drafts outlines that follow the instructions and
+        evaluation weights, gives a semantic second opinion on coverage, and
+        creates Jira work items.
       icon: resource:icons;shalltrack.svg
       prompt: resource:agent-prompts;bid-manager.txt
       conversationStarters:
         - Which mandatory requirements are still uncovered?
-        - Draft an outline that follows the instructions and the evaluation weights
+        - Draft an outline that follows the instructions and the evaluation
+          weights
         - Give a second opinion on the partial items
         - Create Jira work items for the uncovered mandatory items
-      followUpPrompt: Suggest the next step a proposal manager would take with this bid, such as checking partial items, assigning owners or creating work items.
+      followUpPrompt: Suggest the next step a proposal manager would take with this
+        bid, such as checking partial items, assigning owners or creating work
+        items.
       actions:
         - list-bids
         - import-rfp-page
@@ -74,7 +80,8 @@ modules:
       name: "List bids"
       function: a-list-bids
       actionVerb: GET
-      description: "List the bids (RFPs imported into ShallTrack) with their requirement counts. Use it to find the bid the user means."
+      description: "List the bids (RFPs imported into ShallTrack) with their
+        requirement counts. Use it to find the bid the user means."
       inputs:
         nameContains:
           title: "Name contains"
@@ -85,13 +92,16 @@ modules:
       name: "Import RFP page"
       function: a-import-rfp-page
       actionVerb: CREATE
-      description: "Create a new bid by extracting requirements (shall, must, will, should, may statements, submission instructions, evaluation statements, page limits and due dates) from one or more Confluence pages of an RFP."
+      description: "Create a new bid by extracting requirements (shall, must, will,
+        should, may statements, submission instructions, evaluation statements,
+        page limits and due dates) from one or more Confluence pages of an RFP."
       inputs:
         pageId:
           title: "Page ids or URLs"
           type: string
           required: false
-          description: "Confluence page ids or URLs of the RFP, separated by commas. Leave empty to use the current page."
+          description: "Confluence page ids or URLs of the RFP, separated by commas. Leave
+            empty to use the current page."
         bidName:
           title: "Bid name"
           type: string
@@ -101,13 +111,16 @@ modules:
       name: "List requirements"
       function: a-list-requirements
       actionVerb: GET
-      description: "List rows of the compliance matrix of a bid, with filters. Each row has the requirement id, section, strength, type, status, coverage, owner and text."
+      description: "List rows of the compliance matrix of a bid, with filters. Each
+        row has the requirement id, section, strength, type, status, coverage,
+        owner and text."
       inputs:
         bid:
           title: "Bid"
           type: string
           required: false
-          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+          description: "Bid id or part of the bid name. Leave empty for the most recent
+            bid."
         section:
           title: "Section"
           type: string
@@ -117,12 +130,14 @@ modules:
           title: "Strength"
           type: string
           required: false
-          description: "Comma-separated: mandatory, expected, recommended, optional, informational"
+          description: "Comma-separated: mandatory, expected, recommended, optional,
+            informational"
         type:
           title: "Type"
           type: string
           required: false
-          description: "Comma-separated: requirement, instruction, evaluation, limit, deadline"
+          description: "Comma-separated: requirement, instruction, evaluation, limit,
+            deadline"
         status:
           title: "Status"
           type: string
@@ -157,13 +172,15 @@ modules:
       name: "Get requirement"
       function: a-get-requirement
       actionVerb: GET
-      description: "Get one requirement with its full text, lead-in, source location, duplicates, owner, status, notes and coverage evidence."
+      description: "Get one requirement with its full text, lead-in, source location,
+        duplicates, owner, status, notes and coverage evidence."
       inputs:
         bid:
           title: "Bid"
           type: string
           required: false
-          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+          description: "Bid id or part of the bid name. Leave empty for the most recent
+            bid."
         requirementId:
           title: "Requirement id"
           type: string
@@ -173,13 +190,15 @@ modules:
       name: "Get coverage report"
       function: a-get-coverage-report
       actionVerb: GET
-      description: "Report which requirements the response draft does not cover yet (missing and partial items), page and word limit checks, and due dates."
+      description: "Report which requirements the response draft does not cover yet
+        (missing and partial items), page and word limit checks, and due dates."
       inputs:
         bid:
           title: "Bid"
           type: string
           required: false
-          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+          description: "Bid id or part of the bid name. Leave empty for the most recent
+            bid."
         onlyMandatory:
           title: "Only mandatory"
           type: boolean
@@ -189,18 +208,22 @@ modules:
       name: "Run coverage check"
       function: a-run-coverage-check
       actionVerb: UPDATE
-      description: "Read the response draft pages and find, for every requirement, the paragraph that answers it, with a score and the matched evidence. Also checks page and word limits."
+      description: "Read the response draft pages and find, for every requirement, the
+        paragraph that answers it, with a score and the matched evidence. Also
+        checks page and word limits."
       inputs:
         bid:
           title: "Bid"
           type: string
           required: false
-          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+          description: "Bid id or part of the bid name. Leave empty for the most recent
+            bid."
         responsePageIds:
           title: "Response page ids or URLs"
           type: string
           required: false
-          description: "Confluence page ids or URLs of the proposal draft, separated by commas. Leave empty to reuse the pages of the last check."
+          description: "Confluence page ids or URLs of the proposal draft, separated by
+            commas. Leave empty to reuse the pages of the last check."
         includeChildPages:
           title: "Include child pages"
           type: boolean
@@ -210,13 +233,15 @@ modules:
       name: "Update requirement"
       function: a-update-requirement
       actionVerb: UPDATE
-      description: "Set the status, owner or note of one or more requirements in the compliance matrix."
+      description: "Set the status, owner or note of one or more requirements in the
+        compliance matrix."
       inputs:
         bid:
           title: "Bid"
           type: string
           required: false
-          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+          description: "Bid id or part of the bid name. Leave empty for the most recent
+            bid."
         requirementIds:
           title: "Requirement ids"
           type: string
@@ -246,13 +271,15 @@ modules:
       name: "Link evidence"
       function: a-link-evidence
       actionVerb: UPDATE
-      description: "Record the response paragraph that answers a requirement. This marks the requirement covered."
+      description: "Record the response paragraph that answers a requirement. This
+        marks the requirement covered."
       inputs:
         bid:
           title: "Bid"
           type: string
           required: false
-          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+          description: "Bid id or part of the bid name. Leave empty for the most recent
+            bid."
         requirementId:
           title: "Requirement id"
           type: string
@@ -272,13 +299,15 @@ modules:
       name: "Get match candidates"
       function: a-get-match-candidates
       actionVerb: GET
-      description: "Get a requirement and the best candidate paragraphs from the response draft, for a semantic second opinion on coverage."
+      description: "Get a requirement and the best candidate paragraphs from the
+        response draft, for a semantic second opinion on coverage."
       inputs:
         bid:
           title: "Bid"
           type: string
           required: false
-          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+          description: "Bid id or part of the bid name. Leave empty for the most recent
+            bid."
         requirementId:
           title: "Requirement id"
           type: string
@@ -288,13 +317,16 @@ modules:
       name: "Record coverage review"
       function: a-record-review
       actionVerb: UPDATE
-      description: "Record a semantic coverage verdict (covered, partial or missing) with a one-sentence rationale. The verdict overrides the deterministic score in the matrix."
+      description: "Record a semantic coverage verdict (covered, partial or missing)
+        with a one-sentence rationale. The verdict overrides the deterministic
+        score in the matrix."
       inputs:
         bid:
           title: "Bid"
           type: string
           required: false
-          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+          description: "Bid id or part of the bid name. Leave empty for the most recent
+            bid."
         requirementId:
           title: "Requirement id"
           type: string
@@ -314,13 +346,17 @@ modules:
       name: "Get outline plan"
       function: a-get-outline-plan
       actionVerb: GET
-      description: "Get a proposal outline skeleton that follows the submission instructions (Section L style) in order, with page limits, evaluation factor weights (Section M style) and the requirement ids each section must answer."
+      description: "Get a proposal outline skeleton that follows the submission
+        instructions (Section L style) in order, with page limits, evaluation
+        factor weights (Section M style) and the requirement ids each section
+        must answer."
       inputs:
         bid:
           title: "Bid"
           type: string
           required: false
-          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+          description: "Bid id or part of the bid name. Leave empty for the most recent
+            bid."
         totalPages:
           title: "Total pages"
           type: integer
@@ -330,13 +366,15 @@ modules:
       name: "Export matrix page"
       function: a-export-matrix-page
       actionVerb: CREATE
-      description: "Write the compliance matrix as a table to a Confluence page (creates the page the first time, updates it afterwards)."
+      description: "Write the compliance matrix as a table to a Confluence page
+        (creates the page the first time, updates it afterwards)."
       inputs:
         bid:
           title: "Bid"
           type: string
           required: false
-          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+          description: "Bid id or part of the bid name. Leave empty for the most recent
+            bid."
         parentPageId:
           title: "Parent page id or URL"
           type: string
@@ -346,18 +384,21 @@ modules:
       name: "Create Jira work items"
       function: a-create-jira-tasks
       actionVerb: CREATE
-      description: "Create Jira work items for requirements: by default one per uncovered mandatory requirement. Use dryRun true first to preview."
+      description: "Create Jira work items for requirements: by default one per
+        uncovered mandatory requirement. Use dryRun true first to preview."
       inputs:
         bid:
           title: "Bid"
           type: string
           required: false
-          description: "Bid id or part of the bid name. Leave empty for the most recent bid."
+          description: "Bid id or part of the bid name. Leave empty for the most recent
+            bid."
         projectKey:
           title: "Jira space key"
           type: string
           required: false
-          description: "Key of the Jira space (project), e.g. BID. Required unless dryRun is true."
+          description: "Key of the Jira space (project), e.g. BID. Required unless dryRun
+            is true."
         scope:
           title: "Scope"
           type: string
@@ -377,7 +418,8 @@ modules:
           title: "Group by"
           type: string
           required: false
-          description: "requirement (one work item each, default) or section (one per section)"
+          description: "requirement (one work item each, default) or section (one per
+            section)"
         dryRun:
           title: "Dry run"
           type: boolean
@@ -436,7 +478,7 @@ permissions:
     - read:jira-work
     - write:jira-work
 app:
-  id: ari:cloud:ecosystem::app/00000000-0000-0000-0000-000000000000
+  id: ari:cloud:ecosystem::app/f79f6de3-cdcb-422d-831d-5b96d5b4c587
   runtime:
     name: nodejs24.x
     memoryMB: 256
