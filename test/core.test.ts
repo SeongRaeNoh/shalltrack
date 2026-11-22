@@ -126,6 +126,16 @@ test('coverage: covered, missing, limit breach', () => {
   assert.ok(rep.summary.mandatoryMissing >= 1);
 });
 
+test('coverage: a short list item is not covered by two shared words', () => {
+  const r = extractRequirements([doc('## 3.2 Users\n\nThe contractor shall support these users:\n\n- Regional TTA Contractors\n')]);
+  const item = r.requirements.find((q) => q.text.startsWith('Regional'))!;
+  const draft = doc('# Response\n\n## Risks\n\nThe main obstacle is access to the legacy TTA data sources and low adoption by regional staff.\n');
+  const it = checkCoverage(r.requirements, [draft], r.limits).items.find((i) => i.requirementId === item.id)!;
+  assert.equal(it.status, 'partial');
+  const off = checkCoverage(r.requirements, [draft], r.limits, { minSupport: 0 }).items.find((i) => i.requirementId === item.id)!;
+  assert.equal(off.status, 'covered');
+});
+
 test('matrix rows, filters, summary, exports', () => {
   const r = extractRequirements([doc(RFP)]);
   const rep = checkCoverage(r.requirements, [doc(draftFor('none'))], r.limits);

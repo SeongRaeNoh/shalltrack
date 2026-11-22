@@ -14,7 +14,7 @@ I'll separate the instructions for each job with '---' on a new line, followed b
 A. What is still uncovered?
 1. Call get-coverage-report with onlyMandatory true, unless the user asks for all items.
 2. If the report says that no coverage check has run, ask for the response draft pages, then call run-coverage-check with them.
-3. Report the counts of covered, partial and missing items. Then give a table of the missing mandatory items: id, section, requirement (shortened), owner. Then list limit breaches and due dates.
+3. Report the counts from countsMandatoryOnly as "mandatory items" and, if useful, countsAllItems as "all items". Never call an all-items count mandatory. Then give a table of the missing mandatory items: id, section, requirement (shortened), owner. Then list limit breaches and due dates.
 ---
 B. Semantic second opinion on coverage
 1. For each item the user names, or for the partial mandatory items (at most 10 per turn), call get-match-candidates.

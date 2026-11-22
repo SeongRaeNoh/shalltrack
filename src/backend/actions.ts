@@ -70,15 +70,27 @@ export const getRequirementAction = wrap(async (p) => {
   return svc.requirementDetail(str(p.bid), id);
 });
 
+/** Coverage counts over the given rows; "checked" rows are the requirement, instruction and evaluation items that the coverage check scores. */
+function coverageCounts(rows: MatrixRow[]) {
+  const n = (c: MatrixRow['effectiveCoverage']) => rows.filter((r) => r.effectiveCoverage === c).length;
+  const covered = n('covered'), partial = n('partial'), missing = n('missing');
+  return { items: rows.length, checked: covered + partial + missing, covered, partial, missing, notChecked: rows.length - covered - partial - missing };
+}
+
 export const getCoverageReportAction = wrap(async (p) => {
   const m = await svc.getMatrix(str(p.bid));
-  const rows = m.rows.filter((r) => (bool(p.onlyMandatory) ? r.strength === 'mandatory' : true));
+  const onlyMandatory = bool(p.onlyMandatory);
+  const rows = m.rows.filter((r) => (onlyMandatory ? r.strength === 'mandatory' : true));
   const gaps = rows.filter((r) => r.effectiveCoverage === 'missing' || r.effectiveCoverage === 'partial');
+  const limitChecks = m.coverage?.limitChecks ?? [];
   return {
     bid: { id: m.bid.id, name: m.bid.name, responsePages: m.bid.responsePages, lastCoverageAt: m.bid.lastCoverageAt },
-    coverage: m.coverage?.summary ?? null,
+    countsAllItems: m.coverage ? coverageCounts(m.rows) : null,
+    countsMandatoryOnly: m.coverage ? coverageCounts(m.rows.filter((r) => r.strength === 'mandatory')) : null,
+    countsNote: 'countsAllItems covers every requirement of the bid; countsMandatoryOnly covers only mandatory ones. "checked" counts the items the coverage check scores (requirements, instructions, evaluation items); limits and deadlines are not scored. Counts include manual and Rovo review verdicts. The missing and partial lists below are ' + (onlyMandatory ? 'mandatory items only' : 'items of every strength') + '.',
     note: m.coverage ? undefined : 'No coverage check has run yet. Run run-coverage-check with the response draft page ids.',
-    limitChecks: m.coverage?.limitChecks ?? [],
+    limitBreaches: limitChecks.filter((l) => l.status === 'breach').length,
+    limitChecks,
     deadlines: m.deadlines.map((d) => ({ date: d.isoDate ?? d.dateText, time: d.timeText, text: truncate(d.text, 200) })),
     missing: gaps.filter((r) => r.effectiveCoverage === 'missing').slice(0, 60).map(compactRow),
     partial: gaps.filter((r) => r.effectiveCoverage === 'partial').slice(0, 30).map(compactRow),

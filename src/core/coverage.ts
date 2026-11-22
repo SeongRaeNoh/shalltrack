@@ -47,6 +47,13 @@ export interface CoverageOptions {
   wordsPerPage?: number;
   /** limitId -> response target chosen by a user */
   limitMapping?: Record<string, { docId: string; heading?: string }>;
+  /**
+   * A paragraph can make a requirement "covered" only if it shares at least this many distinct terms with it:
+   * requirement terms found in the paragraph plus lead-in terms found in the paragraph or its context.
+   * Below that, its score is capped just under the covered threshold (at most "partial"). Default 3; 0 turns the rule off.
+   * Reason: short list items ("Regional TTA Contractors") reached score 1.0 on two shared words.
+   */
+  minSupport?: number;
 }
 
 interface Para {
@@ -105,7 +112,9 @@ function refPattern(ref: string): RegExp | null {
   return new RegExp('(?:^|[^\\d.])' + ref.replace(/\./g, '\\.') + '(?![\\d]|\\.\\d|-[a-z0-9])', 'i');
 }
 
-export function scoreRequirement(r: Requirement, paras: Para[], idf: (t: string) => number): { score: number; evidence: Evidence[]; explicit: boolean } {
+export function scoreRequirement(r: Requirement, paras: Para[], idf: (t: string) => number, opts: CoverageOptions = {}): { score: number; evidence: Evidence[]; explicit: boolean } {
+  const minSupport = opts.minSupport ?? 3;
+  const capAt = (opts.coveredThreshold ?? 0.55) - 0.01;
   const rTerms = Array.from(new Set(terms(r.text)));
   const leadTerms = r.leadIn ? Array.from(new Set(terms(r.leadIn))).filter((t) => !rTerms.includes(t)) : [];
   if (!rTerms.length) return { score: 0, evidence: [], explicit: false };
@@ -123,7 +132,8 @@ export function scoreRequirement(r: Requirement, paras: Para[], idf: (t: string)
       else if (p.context.has(t)) got += 0.5 * idf(t);
     }
     let leadGot = 0;
-    for (const t of leadTerms) if (p.termSet.has(t) || p.context.has(t)) leadGot += idf(t);
+    let leadHits = 0;
+    for (const t of leadTerms) if (p.termSet.has(t) || p.context.has(t)) { leadGot += idf(t); leadHits++; }
     // the lead-in or antecedent sentence only adds a bonus; it never lowers the score of the item itself
     let score = got / total + (leadTotal ? 0.15 * (leadGot / leadTotal) : 0);
     if (rBigrams.size) {
@@ -136,6 +146,8 @@ export function scoreRequirement(r: Requirement, paras: Para[], idf: (t: string)
     if (idRe.test(p.text)) { explicit = true; score = Math.max(score, 0.9); }
     else if (secRe && matched.length && (secRe.test(p.text) || p.headingPath.some((h) => secRe.test(h)))) score += 0.2; // section cited: bonus only
     if (matched.length === 0 && !explicit) continue;
+    const support = matched.length + leadHits;
+    if (!explicit && support < minSupport) score = Math.min(score, capAt);
     scored.push({ p, score: Math.min(1, score), matched, explicit });
   }
   scored.sort((a, b) => b.score - a.score);
@@ -190,7 +202,7 @@ export function checkCoverage(reqs: Requirement[], response: SourceDoc[], limits
   const items: CoverageItem[] = [];
   for (const r of reqs) {
     if (!isCoverable(r)) continue;
-    const s = scoreRequirement(r, paras, idf);
+    const s = scoreRequirement(r, paras, idf, opts);
     items.push({ requirementId: r.id, status: coverageStatus(s.score, s.explicit, opts), score: s.score, evidence: s.evidence, explicitReference: s.explicit });
   }
   const limitChecks = checkLimits(limits, response, opts);
