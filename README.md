@@ -9,8 +9,8 @@ The extraction and the coverage check are deterministic code (rules and term mat
 ## Install
 
 1. Open the [ShallTrack installation link](https://developer.atlassian.com/console/install/f79f6de3-cdcb-422d-831d-5b96d5b4c587?signature=AYABeHx4Lkg3aY%2BjM8tbMQDmPb0AAAADAAdhd3Mta21zAEthcm46YXdzOmttczp1cy13ZXN0LTI6NzA5NTg3ODM1MjQzOmtleS83MDVlZDY3MC1mNTdjLTQxYjUtOWY5Yi1lM2YyZGNjMTQ2ZTcAuAECAQB4CxqLTo9l4lqXuFjNim1xJM%2Bp%2F3TVP9xHS2BrU5DRRucBFxs1v0ASFxA7KHArneH15gAAAH4wfAYJKoZIhvcNAQcGoG8wbQIBADBoBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDHNgvHd%2F034l38EIOQIBEIA7dSBib2S%2F5X0dm%2FSgTgvsMFhCbYTbdE%2FghpG3%2BL0ITYWz2sD6kMaw20im7v3zyw4Vhu1S1Edl4BQrOPMAB2F3cy1rbXMAS2Fybjphd3M6a21zOmV1LXdlc3QtMTo3MDk1ODc4MzUyNDM6a2V5LzQ2MzBjZTZiLTAwYzMtNGRlMi04NzdiLTYyN2UyMDYwZTVjYwC4AQICAHi9bVMAkme4qVQX1fQHo6ePw3H40A7cGfz7yrmSfBWMXgGJPKgnOyziggceGmKwG6%2FSAAAAfjB8BgkqhkiG9w0BBwagbzBtAgEAMGgGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMW%2FpCagHcGtkqkdtWAgEQgDtyQd5Ca%2F620n7nibHUwEPNnDMvMuFSUdcemyToux3bCn%2FUt3Tc2y8Hs5fi3LGeGM5PriTMQwRWRwazhgAHYXdzLWttcwBLYXJuOmF3czprbXM6dXMtZWFzdC0xOjcwOTU4NzgzNTI0MzprZXkvNmMxMjBiYTAtNGNkNS00OTg1LWI4MmUtNDBhMDQ5NTJjYzU3ALgBAgIAeDYASx0XCjkny4iLV6vz%2BKtEGSGT6kdt0QRpkn6D%2FlVEAcVAhES124idgB8rSdjRx4gAAAB%2BMHwGCSqGSIb3DQEHBqBvMG0CAQAwaAYJKoZIhvcNAQcBMB4GCWCGSAFlAwQBLjARBAxihZVdmNvv0pHFFVgCARCAO5d5oMtpB8umkyKrC%2Ff5r42fsIF9cbfnU956W%2BL%2F88vMjQIo8SEEJ5nH%2BMUEBtlV6Yictwo2bOCaY3fvAgAAAAAMAAAQAAAAAAAAAAAAAAAAACvCVFOG8E4nFO5B707K20v%2F%2F%2F%2F%2FAAAAAQAAAAAAAAAAAAAAAQAAADJA%2BuKF276CClY%2BLHJBb2hc%2FRQd1cLKJMEmvvq5mZhdv00AydbVTtua1NvfoxvY4e78W9lfXWjZfBkkvVoayTo1%2FJU%3D&product=confluence&product=jira) (Atlassian developer console install page; sign in with your own Atlassian account).
-2. Choose your Atlassian Cloud site. Confluence is required; Jira is optional (work items and the Jira panel need it); Rovo is needed for the agent.
-3. In Confluence, open **Apps > ShallTrack** (the bid desk), or open an RFP page and choose **More actions (...) > ShallTrack: shred RFP or check draft**.
+2. Select **Get app**, choose your Atlassian Cloud site and select **Install**. Confluence is required. Jira is optional and is not ticked by default: tick **Jira** under "Select any additional Atlassian apps that you would like to connect this app to" for work items and the Jira panel. Rovo is needed for the agent.
+3. In Confluence, open **Apps > ShallTrack** in the sidebar (the bid desk), or open an RFP page and choose **More actions (...) > Apps > ShallTrack: shred RFP or check draft**.
 
 ## What it does
 
@@ -55,9 +55,9 @@ The coverage scorer was checked on a short fictional draft (`test/fixtures/heads
 
 The `rovo:mcp` module exposes 13 tools: `list-bids`, `import-rfp-page`, `list-requirements`, `get-requirement`, `get-coverage-report`, `run-coverage-check`, `update-requirement`, `link-evidence`, `get-match-candidates`, `record-review`, `get-outline-plan`, `export-matrix-page`, `create-jira-tasks`.
 
-- Rovo Studio: create a custom agent, **Add tools > Connected apps > ShallTrack**, pick the tools.
+- Rovo Studio: create a custom agent (Rovo Chat > **Change agent > Create agent > Start from blank**), **Add tools > Connected apps > ShallTrack**, pick the tools.
 - Outside MCP clients (Preview feature of Atlassian):
-  1. A site or organization admin enables the tools: Atlassian Administration > Apps > Sites > (your site) > Connected apps > ShallTrack > View app details > Tools: **Enable tools**.
+  1. A site or organization admin enables the tools: Atlassian Administration > Apps > Sites > (your site) > Connected apps > ShallTrack > View app details > Tools: **Enable tools**, then **Enable** in the dialog.
   2. Add the remote MCP server `https://mcp.atlassian.com/forge/f79f6de3-cdcb-422d-831d-5b96d5b4c587` to the client (for Claude Code: `claude mcp add --transport http shalltrack https://mcp.atlassian.com/forge/f79f6de3-cdcb-422d-831d-5b96d5b4c587`).
   3. The client opens Atlassian's OAuth consent screen; choose the site and select **Accept**. Tools run with your own Confluence and Jira permissions.
 - [skills/shalltrack-rfp-compliance/SKILL.md](skills/shalltrack-rfp-compliance/SKILL.md) (MIT) tells an outside agent how to plan a response from the instructions and evaluation weights, answer requirements by ID, run the coverage check and record evidence. Put the folder where your agent loads skills (for Claude Code: `~/.claude/skills/shalltrack-rfp-compliance/`).
