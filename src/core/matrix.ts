@@ -45,6 +45,8 @@ export interface MatrixRow {
   /** coverage after manual evidence and semantic reviews are applied */
   effectiveCoverage: CoverageStatus | 'n/a' | 'unchecked';
   coverageSource: 'manual' | 'review' | 'auto' | 'none';
+  /** semantic second opinion (Rovo or user), if one was recorded */
+  review?: SemanticReview;
 }
 
 export function buildRows(reqs: Requirement[], state: Record<string, ReqState>, report?: CoverageReport | null): MatrixRow[] {
@@ -66,7 +68,7 @@ export function buildRows(reqs: Requirement[], state: Record<string, ReqState>, 
       duplicates: r.alsoAt.length, owner: st.owner, status: st.status, note: st.note, jiraKey: st.jiraKey,
       coverage: c?.status, coverageScore: c?.score,
       evidenceExcerpt: st.evidence?.excerpt ?? ev?.excerpt, evidenceDocTitle: st.evidence?.pageTitle ?? ev?.docTitle, evidenceDocId: st.evidence?.pageId ?? ev?.docId,
-      effectiveCoverage: effective, coverageSource: source,
+      effectiveCoverage: effective, coverageSource: source, review: st.review,
     };
   });
 }

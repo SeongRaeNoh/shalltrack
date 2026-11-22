@@ -20,7 +20,7 @@ function accountId(payload: Payload, ctx: Ctx): string | undefined {
 export function compactRow(r: MatrixRow) {
   return {
     id: r.id, section: (r.sectionRef ? r.sectionRef + ' ' : '') + r.sectionTitle, type: r.type, strength: r.strength, status: r.status,
-    coverage: r.effectiveCoverage, score: r.coverageScore, owner: r.owner?.name ?? r.owner?.accountId, jira: r.jiraKey,
+    coverage: r.effectiveCoverage, coverageSource: r.coverageSource, score: r.coverageScore, owner: r.owner?.name ?? r.owner?.accountId, jira: r.jiraKey,
     text: truncate(r.text, 260), evidence: r.evidenceExcerpt ? truncate(r.evidenceExcerpt, 160) + (r.evidenceDocTitle ? ' [' + r.evidenceDocTitle + ']' : '') : undefined,
   };
 }

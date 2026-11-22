@@ -84,8 +84,13 @@ function DetailModal(props: { bidId: string; row: MatrixRow; onClose: () => void
           <Text><Strong>{r.text}</Strong></Text>
           {r.leadIn ? <Text><Strong>Lead-in:</Strong> {r.leadIn}</Text> : null}
           <Text><Strong>Source:</Strong> {r.docTitle} / {(r.sectionRef ? r.sectionRef + ' ' : '') + r.sectionTitle}{r.duplicates ? ' (also stated ' + r.duplicates + ' more time(s))' : ''}</Text>
+          {r.review ? (
+            <SectionMessage appearance={r.review.verdict === 'covered' ? 'success' : 'warning'} title={'Second opinion (' + (r.review.reviewer === 'rovo' ? 'Rovo agent' : 'user') + '): ' + r.review.verdict + (r.coverage && r.coverage !== r.review.verdict ? ', replaces term matching (' + r.coverage + ')' : '')}>
+              <Text>{r.review.rationale}</Text>
+            </SectionMessage>
+          ) : null}
           {r.evidenceExcerpt ? (
-            <SectionMessage appearance={r.effectiveCoverage === 'covered' ? 'success' : 'warning'} title={'Best evidence' + (r.coverageScore !== undefined ? ' (score ' + r.coverageScore + ')' : '') + (r.evidenceDocTitle ? ' in ' + r.evidenceDocTitle : '')}>
+            <SectionMessage appearance={r.coverageSource === 'manual' || r.coverage === 'covered' ? 'success' : r.coverage === 'missing' ? 'information' : 'warning'} title={(r.coverageSource !== 'manual' && r.coverage === 'missing' ? 'Closest paragraph, not an answer' : 'Best evidence') + (r.coverageSource !== 'manual' && r.coverageScore !== undefined ? ' (score ' + r.coverageScore + ')' : '') + (r.evidenceDocTitle ? ' in ' + r.evidenceDocTitle : '')}>
               <Text>{r.evidenceExcerpt}</Text>
             </SectionMessage>
           ) : null}
@@ -120,7 +125,7 @@ function MatrixTab(props: { m: Matrix; onOpen: (r: MatrixRow) => void; filter: M
     { key: 'id', content: r.id }, { key: 'sec', content: short((r.sectionRef ? r.sectionRef + ' ' : '') + r.sectionTitle, 40) },
     { key: 'text', content: short(r.text, 160) }, { key: 'strength', content: <Pill value={r.strength} /> }, { key: 'type', content: r.type },
     { key: 'owner', content: r.owner?.accountId ? <User accountId={r.owner.accountId} /> : r.owner?.name ?? '-' }, { key: 'status', content: <Pill value={r.status} /> },
-    { key: 'cov', content: <Pill value={r.effectiveCoverage} label={r.effectiveCoverage + (r.coverageScore !== undefined && r.coverageSource === 'auto' ? ' ' + r.coverageScore.toFixed(2) : '')} /> },
+    { key: 'cov', content: <Pill value={r.effectiveCoverage} label={r.effectiveCoverage + (r.coverageScore !== undefined && r.coverageSource === 'auto' ? ' ' + r.coverageScore.toFixed(2) : r.coverageSource === 'review' ? ' (review)' : r.coverageSource === 'manual' ? ' (manual)' : '')} /> },
     { key: 'act', content: <Button appearance="subtle" onClick={() => props.onOpen(r)}>Open</Button> },
   ] }));
   return (
