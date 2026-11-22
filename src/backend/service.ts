@@ -106,8 +106,9 @@ export async function listBids() {
   return store.listBids();
 }
 
+/** Requirements, state and coverage of a bid. The rows need only the best evidence entry, so the slim coverage chunks are read. */
 async function loadAll(bid: store.Bid) {
-  const [reqs, state, coverage] = await Promise.all([store.getRequirements(bid), store.getState(bid.id), store.getCoverage(bid)]);
+  const [reqs, state, coverage] = await Promise.all([store.getRequirements(bid), store.getState(bid.id), store.getCoverage(bid, 'best')]);
   return { reqs, state, coverage, rows: buildRows(reqs, state, coverage) };
 }
 
@@ -158,17 +159,19 @@ export async function updateRequirements(bidRef: string | undefined, reqIds: str
 }
 
 export async function setResponsePages(bidRef: string | undefined, pageRefs: string[], includeChildren = false) {
-  const bid = await resolveBid(bidRef);
+  return bidSummary(await applyResponsePages(await resolveBid(bidRef), pageRefs, includeChildren));
+}
+
+async function applyResponsePages(bid: store.Bid, pageRefs: string[], includeChildren: boolean): Promise<store.Bid> {
   const ids = pageRefs.map((r) => conf.parsePageRef(r)).filter((x): x is string => !!x).slice(0, MAX_RESPONSE_PAGES);
   const pages = await Promise.all(ids.map((id) => conf.getPage(id)));
   bid.responsePages = pages.map((p) => ({ pageId: p.id, title: p.title, includeChildren }));
-  await store.saveBid(bid);
-  return bidSummary(bid);
+  return store.saveBid(bid);
 }
 
 export async function runCoverage(bidRef: string | undefined, pageRefs?: string[], opts: { includeChildren?: boolean; wordsPerPage?: number } = {}) {
   let bid = await resolveBid(bidRef);
-  if (pageRefs && pageRefs.length) bid = await resolveBid((await setResponsePages(bid.id, pageRefs, opts.includeChildren)).id);
+  if (pageRefs && pageRefs.length) bid = await applyResponsePages(bid, pageRefs, opts.includeChildren ?? false);
   if (opts.wordsPerPage && opts.wordsPerPage >= 100 && opts.wordsPerPage <= 2000) bid.wordsPerPage = opts.wordsPerPage;
   if (!bid.responsePages.length) throw new UserError('No response draft pages are set for bid "' + bid.name + '". Give the page ids of the proposal draft.');
   const ids: string[] = [];
@@ -214,12 +217,12 @@ export async function recordReview(bidRef: string | undefined, reqId: string, ve
   return { requirementId: reqId, review: st.review };
 }
 
+/** One requirement with its state and full coverage item; reads only the chunks up to the one that holds the item. */
 export async function requirementDetail(bidRef: string | undefined, reqId: string) {
   const bid = await resolveBid(bidRef);
-  const { reqs, state, coverage } = await loadAll(bid);
-  const r = reqs.find((x) => x.id === reqId);
+  const [r, state, item] = await Promise.all([store.findRequirement(bid, reqId), store.getState(bid.id), store.findCoverageItem(bid, reqId)]);
   if (!r) throw new UserError('Unknown requirement id ' + reqId);
-  return { bid: { id: bid.id, name: bid.name }, requirement: r, state: state[reqId] ?? { status: 'open' }, coverage: coverage?.items.find((i) => i.requirementId === reqId) ?? null };
+  return { bid: { id: bid.id, name: bid.name }, requirement: r, state: state[reqId] ?? { status: 'open' }, coverage: item ?? null };
 }
 
 export async function outline(bidRef: string | undefined, totalPages?: number) {

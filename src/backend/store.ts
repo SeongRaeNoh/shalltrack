@@ -1,5 +1,6 @@
 // Persistence in the Forge Key-Value Store. Large arrays are split into chunks below the 240 KiB value limit.
 import { kvs } from '@forge/kvs';
+import { slimCoverageItems } from '../core';
 import type { CoverageItem, CoverageReport, Deadline, ExtractionStats, FactorSet, Limit, ReqState, Requirement } from '../core';
 
 export interface SourceRefMeta { kind: 'page' | 'paste'; pageId?: string; title: string; url?: string; spaceId?: string }
@@ -22,6 +23,8 @@ export interface Bid {
   deadlines: Deadline[];
   reqChunks: number;
   covChunks: number;
+  /** Chunks of the coverage items with only the best evidence entry (what the matrix rows need). Absent for coverage saved before 2.6.0. */
+  covSlimChunks?: number;
   lastCoverageAt?: string;
 }
 
@@ -62,6 +65,7 @@ const k = {
   req: (id: string) => 'bid:' + id + ':req:',
   state: (id: string) => 'bid:' + id + ':state',
   cov: (id: string) => 'bid:' + id + ':cov:',
+  covSlim: (id: string) => 'bid:' + id + ':covs:',
   covMeta: (id: string) => 'bid:' + id + ':covmeta',
   jira: (key: string) => 'jira:' + key,
 };
@@ -75,8 +79,8 @@ export async function getBid(id: string): Promise<Bid | undefined> {
 }
 
 export async function saveBid(bid: Bid, reqs?: Requirement[]): Promise<Bid> {
-  const prev = await getBid(bid.id);
-  if (reqs) bid.reqChunks = await writeChunks(k.req(bid.id), reqs, prev?.reqChunks ?? 0);
+  // the previous chunk count is needed only when the requirements are rewritten
+  if (reqs) bid.reqChunks = await writeChunks(k.req(bid.id), reqs, (await getBid(bid.id))?.reqChunks ?? 0);
   bid.updatedAt = new Date().toISOString();
   await kvs.set(k.meta(bid.id), bid);
   const index = (await listBids()).filter((b) => b.id !== bid.id);
@@ -90,6 +94,7 @@ export async function deleteBid(id: string): Promise<void> {
   if (!bid) return;
   for (let i = 0; i < bid.reqChunks; i++) await kvs.delete(k.req(id) + i);
   for (let i = 0; i < bid.covChunks; i++) await kvs.delete(k.cov(id) + i);
+  for (let i = 0; i < (bid.covSlimChunks ?? 0); i++) await kvs.delete(k.covSlim(id) + i);
   await kvs.delete(k.state(id));
   await kvs.delete(k.covMeta(id));
   await kvs.delete(k.meta(id));
@@ -112,17 +117,42 @@ export async function saveState(bidId: string, state: Record<string, ReqState>):
 export async function saveCoverage(bid: Bid, report: CoverageReport): Promise<Bid> {
   const items: CoverageItem[] = report.items.map((i) => ({ ...i, evidence: i.evidence.slice(0, 3).map((e) => ({ ...e, excerpt: e.excerpt.slice(0, 280), matchedTerms: e.matchedTerms.slice(0, 12) })) }));
   bid.covChunks = await writeChunks(k.cov(bid.id), items, bid.covChunks ?? 0);
+  bid.covSlimChunks = await writeChunks(k.covSlim(bid.id), slimCoverageItems(items), bid.covSlimChunks ?? 0);
   await kvs.set(k.covMeta(bid.id), { generatedAt: report.generatedAt, limitChecks: report.limitChecks, summary: report.summary });
   bid.lastCoverageAt = report.generatedAt;
   await kvs.set(k.meta(bid.id), bid);
   return bid;
 }
 
-export async function getCoverage(bid: Bid): Promise<CoverageReport | null> {
+/**
+ * The stored coverage report. evidence 'best' reads the slim items (only the best evidence entry), which is all that
+ * the matrix rows use; it falls back to the full items for coverage saved before the slim chunks existed.
+ */
+export async function getCoverage(bid: Bid, evidence: 'all' | 'best' = 'all'): Promise<CoverageReport | null> {
   const meta = await kvs.get<Omit<CoverageReport, 'items'>>(k.covMeta(bid.id));
   if (!meta) return null;
-  const items = await readChunks<CoverageItem>(k.cov(bid.id), bid.covChunks ?? 0);
+  const slim = evidence === 'best' && bid.covSlimChunks !== undefined;
+  const items = slim ? await readChunks<CoverageItem>(k.covSlim(bid.id), bid.covSlimChunks ?? 0) : await readChunks<CoverageItem>(k.cov(bid.id), bid.covChunks ?? 0);
   return { ...meta, items };
+}
+
+/** Read chunks one after another and stop at the first item that matches, so a lookup of one item skips the later chunks. */
+async function findInChunks<T>(prefix: string, n: number, match: (item: T) => boolean): Promise<T | undefined> {
+  for (let i = 0; i < n; i++) {
+    const hit = ((await kvs.get<T[]>(prefix + i)) ?? []).find(match);
+    if (hit) return hit;
+  }
+  return undefined;
+}
+
+export async function findRequirement(bid: Bid, reqId: string): Promise<Requirement | undefined> {
+  return findInChunks<Requirement>(k.req(bid.id), bid.reqChunks, (r) => r.id === reqId);
+}
+
+/** The full coverage item (up to three evidence entries) of one requirement, or undefined when no check has run. */
+export async function findCoverageItem(bid: Bid, reqId: string): Promise<CoverageItem | undefined> {
+  if (!bid.lastCoverageAt) return undefined;
+  return findInChunks<CoverageItem>(k.cov(bid.id), bid.covChunks ?? 0, (i) => i.requirementId === reqId);
 }
 
 export async function linkIssue(issueKey: string, bidId: string, reqIds: string[]): Promise<void> {

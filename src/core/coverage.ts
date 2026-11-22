@@ -294,3 +294,13 @@ export function checkLimits(limits: Limit[], response: SourceDoc[], opts: Covera
 export function plain(s: string): string {
   return normalizePunct(s);
 }
+
+/**
+ * Coverage items reduced to what the matrix rows read (status, score and the best evidence entry without its
+ * heading path and matched terms). buildRows uses only evidence[0].excerpt, docTitle and docId, so rows built from these
+ * items equal rows built from the full items.
+ * The detail views (get-requirement, get-match-candidates) still read the full items with up to three evidence entries.
+ */
+export function slimCoverageItems(items: CoverageItem[]): CoverageItem[] {
+  return items.map((i) => ({ ...i, evidence: i.evidence.slice(0, 1).map((e) => ({ ...e, headingPath: [], matchedTerms: [] })) }));
+}

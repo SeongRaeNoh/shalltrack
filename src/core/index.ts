@@ -8,7 +8,7 @@ export { extractLimits, extractDeadline } from './limits';
 export { extractFactors, applyWeights } from './factors';
 export { dedupeRequirements, jaccard } from './dedupe';
 export { extractRequirements, scanDocument, classifySentence, findModals, findActor, requirementId } from './extract';
-export { checkCoverage, checkLimits, coverageStatus, isCoverable, responseParagraphs, scoreRequirement, terms } from './coverage';
+export { checkCoverage, checkLimits, coverageStatus, isCoverable, responseParagraphs, scoreRequirement, slimCoverageItems, terms } from './coverage';
 export * from './matrix';
 export { buildOutline } from './outline';
 export type { Outline, OutlineSection } from './outline';

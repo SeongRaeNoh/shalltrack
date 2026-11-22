@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import * as assert from 'node:assert/strict';
 import * as fs from 'fs';
 import * as path from 'path';
-import { buildOutline, extractRequirements, markdownToBlocks, storageToBlocks } from '../src/core';
+import { buildOutline, buildRows, checkCoverage, extractRequirements, filterRows, markdownToBlocks, slimCoverageItems, storageToBlocks, summarize } from '../src/core';
 import { markdownToStorage } from '../scripts/md-to-storage';
 import { evaluate } from '../eval/run_eval';
 
@@ -47,3 +47,18 @@ for (const [g, d, id] of [['test_headstart.json', 'headstart_rfq.md', 'headstart
     assert.ok(p >= 0.95 && rec >= 0.95, 'P ' + p + ' R ' + rec);
   });
 }
+
+test('matrix rows from the slim coverage items equal the rows from the full items (Head Start RFQ and draft)', () => {
+  const rfp = extractRequirements([{ id: 'hs', title: 'Head Start RFQ', blocks: markdownToBlocks(read('headstart_rfq.md')) }]);
+  const draft = { id: 'draft', title: 'Response draft', blocks: markdownToBlocks(read('headstart_response_draft.md')) };
+  const report = checkCoverage(rfp.requirements, [draft], rfp.limits);
+  assert.ok(report.items.some((i) => i.evidence.length > 1), 'the fixture must have items with several evidence entries');
+  const state = { [rfp.requirements[3].id]: { status: 'in-progress' as const, jiraKey: 'PROC-1' } };
+  const full = buildRows(rfp.requirements, state, report);
+  const slim = buildRows(rfp.requirements, state, { ...report, items: slimCoverageItems(report.items) });
+  assert.deepEqual(slim, full);
+  // the bid desk filters these rows in the browser with the same functions the getMatrix resolver uses
+  const f = { section: '9.2', strength: ['mandatory' as const], text: 'resume' };
+  assert.deepEqual(summarize(filterRows(slim, f)), summarize(filterRows(full, f)));
+  assert.ok(JSON.stringify(slimCoverageItems(report.items)).length < JSON.stringify(report.items).length);
+});

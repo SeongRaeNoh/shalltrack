@@ -7,6 +7,7 @@ import ForgeReconciler, {
 } from '@forge/react';
 import type { BidIndexEntry } from '../backend/store';
 import type { MatrixRow, MatrixSummary, Limit, Deadline, FactorSet, LimitCheck, CoverageReport, MatrixFilter } from '../core';
+import { filterRows, summarize } from '../core/matrix';
 import { COVERAGES, ErrorBox, Pill, STATUSES, STRENGTHS, TYPES, call, opt, short } from './shared';
 
 interface Matrix {
@@ -279,7 +280,10 @@ function ExportTab(props: { m: Matrix; reload: () => void }) {
 function App() {
   const [bids, setBids] = useState<BidIndexEntry[] | null>(null);
   const [bidId, setBidId] = useState<string | undefined>();
-  const [m, setM] = useState<Matrix | null>(null);
+  // full: the unfiltered matrix of the bid (one resolver call per bid and per change); the filters run in the browser on it.
+  const [full, setFull] = useState<Matrix | null>(null);
+  // server: the server-filtered matrix, used only when the bid has more rows than one getMatrix page (1000)
+  const [server, setServer] = useState<Matrix | null>(null);
   const [filter, setFilter] = useState<MatrixFilter>({});
   const [open, setOpen] = useState<MatrixRow | null>(null);
   const [showNew, setShowNew] = useState(false);
@@ -289,13 +293,31 @@ function App() {
   const loadBids = async (select?: string) => {
     try { const b = await call<BidIndexEntry[]>('listBids'); setBids(b); setBidId(select ?? bidId ?? b[0]?.id); } catch (e) { setError((e as Error).message); setBids([]); }
   };
+  const paged = (x: Matrix | null) => !!x && x.summary.total > x.rows.length;
   const loadMatrix = async () => {
     if (!bidId) return;
     setLoading(true);
-    try { setM(await call<Matrix>('getMatrix', { bidId, filter })); setError(null); } catch (e) { setError((e as Error).message); } finally { setLoading(false); }
+    try {
+      const all = await call<Matrix>('getMatrix', { bidId });
+      setFull(all);
+      setServer(paged(all) ? await call<Matrix>('getMatrix', { bidId, filter }) : null);
+      setError(null);
+    } catch (e) { setError((e as Error).message); } finally { setLoading(false); }
+  };
+  const loadServerFiltered = async () => {
+    if (!bidId) return;
+    try { setServer(await call<Matrix>('getMatrix', { bidId, filter })); setError(null); } catch (e) { setError((e as Error).message); }
   };
   useEffect(() => { loadBids(); }, []);
-  useEffect(() => { loadMatrix(); }, [bidId, JSON.stringify(filter)]);
+  useEffect(() => { loadMatrix(); }, [bidId]);
+  // Filter changes cost no storage reads: the same filterRows and summarize as the getMatrix resolver run on the loaded rows.
+  useEffect(() => { if (paged(full)) loadServerFiltered(); }, [JSON.stringify(filter)]);
+  const m = useMemo<Matrix | null>(() => {
+    if (!full) return null;
+    if (paged(full)) return server ?? full;
+    const rows = filterRows(full.rows, filter);
+    return { ...full, rows, total: rows.length, filteredSummary: summarize(rows) };
+  }, [full, server, JSON.stringify(filter)]);
 
   const s = m?.summary;
   const coveredShare = useMemo(() => (s && s.total ? (s.byCoverage.covered ?? 0) / s.total : 0), [s]);
