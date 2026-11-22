@@ -290,20 +290,36 @@ export async function createJiraTasks(bidRef: string | undefined, input: JiraTas
   const planned = groups.slice(0, max);
   if (input.dryRun) return { dryRun: true, wouldCreate: planned.map((g) => ({ summary: g.summary, requirementIds: g.rows.map((r) => r.id) })), skippedBeyondMax: Math.max(0, groups.length - max) };
   if (!input.projectKey) throw new UserError('projectKey is required to create Jira work items');
-  const type = await jira.pickIssueType(input.projectKey);
-  const created: Array<{ key: string; requirementIds: string[] }> = [];
+  const bidLabel = 'bid-' + slug(bid.name, 30).toLowerCase();
+  // Rovo repeats an action that runs too long; a repeated call must link the work items that already exist instead of creating them again.
+  const existing = input.groupBy === 'section' ? new Map<string, string>() : await jira.findIssuesByLabel(input.projectKey, bidLabel);
+  const reused: Array<{ key: string; requirementIds: string[] }> = [];
+  const todo: typeof planned = [];
   for (const g of planned) {
+    const key = g.rows.length === 1 ? existing.get(g.rows[0].id) : undefined;
+    if (key) reused.push({ key, requirementIds: [g.rows[0].id] });
+    else todo.push(g);
+  }
+  const type = await jira.pickIssueType(input.projectKey);
+  const results = await jira.createIssues(input.projectKey, type.id, todo.map((g) => {
     const lines = ['Created by ShallTrack for bid "' + bid.name + '".'];
     for (const r of g.rows) lines.push(r.id + ' (' + r.strength + ', ' + ((r.sectionRef ? r.sectionRef + ' ' : '') + r.sectionTitle) + '): ' + r.text);
-    const issue = await jira.createIssue(input.projectKey, type.id, g.summary, lines, ['shalltrack', 'bid-' + slug(bid.name, 30).toLowerCase()]);
-    for (const r of g.rows) state[r.id] = { ...(state[r.id] ?? { status: 'open' }), jiraKey: issue.key, status: state[r.id]?.status === 'open' || !state[r.id] ? 'in-progress' : state[r.id].status };
-    await store.linkIssue(issue.key, bid.id, g.rows.map((r) => r.id));
-    created.push({ key: issue.key, requirementIds: g.rows.map((r) => r.id) });
-  }
+    return { summary: g.summary, lines, labels: ['shalltrack', bidLabel] };
+  }));
+  const created: Array<{ key: string; requirementIds: string[] }> = [];
+  const failed: string[] = [];
+  todo.forEach((g, i) => {
+    const issue = results[i];
+    if (issue) created.push({ key: issue.key, requirementIds: g.rows.map((r) => r.id) });
+    else failed.push(...g.rows.map((r) => r.id));
+  });
+  const linked = [...created, ...reused];
+  for (const c of linked) for (const id of c.requirementIds) state[id] = { ...(state[id] ?? { status: 'open' }), jiraKey: c.key, status: state[id]?.status === 'open' || !state[id] ? 'in-progress' : state[id].status };
   await store.saveState(bid.id, state);
+  for (let i = 0; i < linked.length; i += 10) await Promise.all(linked.slice(i, i + 10).map((c) => store.linkIssue(c.key, bid.id, c.requirementIds)));
   bid.jiraProjectKey = input.projectKey;
   await store.saveBid(bid);
-  return { created, skippedBeyondMax: Math.max(0, groups.length - max), issueType: type.name };
+  return { created, alreadyExisting: reused, failedRequirementIds: failed, skippedBeyondMax: Math.max(0, groups.length - max), issueType: type.name };
 }
 
 export async function issueContext(issueKey: string) {

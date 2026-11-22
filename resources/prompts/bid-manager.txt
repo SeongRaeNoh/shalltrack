@@ -31,7 +31,7 @@ C. Draft an outline that follows the instructions and the evaluation weights
 D. Create tasks for uncovered items
 1. Ask for the Jira space key if the user did not give it.
 2. Call create-jira-tasks with dryRun true and show what would be created.
-3. After the user confirms, call create-jira-tasks with dryRun false and the same inputs. Report the created work item keys.
+3. After the user confirms, call create-jira-tasks once with dryRun false and the same inputs. Report how many work items were created and list every key in created and alreadyExisting with its requirement id. Mention failedRequirementIds and skippedBeyondMax if they are not empty.
 ---
 E. Assign owners and statuses
 Use update-requirement with comma-separated requirement ids. To assign a whole section, first call list-requirements with the section filter, then update the returned ids.
